@@ -1,0 +1,189 @@
+import React, { useState } from 'react';
+import { View, Text, Button, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Speech from 'expo-speech';
+
+const Stack = createNativeStackNavigator();
+
+// Flashcard data
+const flashcards = [
+  { word: 'Hello', translation: 'Hola' },
+  { word: 'Thank you', translation: 'Gracias' },
+  { word: 'Goodbye', translation: 'Adiós' },
+  { word: 'Please', translation: 'Por favor' },
+  { word: 'Yes', translation: 'Sí' },
+];
+
+// Quiz data
+const questions = [
+  {
+    question: 'How do you say "Hello" in Spanish?',
+    options: ['Hola', 'Bonjour', 'Ciao'],
+    answer: 'Hola',
+  },
+  {
+    question: 'What is "Gracias" in English?',
+    options: ['Sorry', 'Thank you', 'Please'],
+    answer: 'Thank you',
+  },
+  {
+    question: 'What is the translation of "Please"?',
+    options: ['Gracias', 'Por favor', 'Lo siento'],
+    answer: 'Por favor',
+  },
+];
+
+// Home screen
+function HomeScreen({ navigation }) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Language Learning App</Text>
+      <Button title="Start Flashcards" onPress={() => navigation.navigate('Flashcards')} />
+      <View style={{ margin: 10 }} />
+      <Button title="Take Quiz" onPress={() => navigation.navigate('Quiz')} />
+    </View>
+  );
+}
+
+// Flashcard screen
+function FlashcardScreen() {
+  const [index, setIndex] = useState(0);
+  const [showTranslation, setShowTranslation] = useState(false);
+
+  const currentCard = flashcards[index];
+
+  const speak = () => Speech.speak(currentCard.word);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.word}>{currentCard.word}</Text>
+      {showTranslation && (
+        <Text style={styles.translation}>Translation: {currentCard.translation}</Text>
+      )}
+
+      <Button title="🔊 Play Sound" onPress={speak} />
+      <Button title="💬 Show Translation" onPress={() => setShowTranslation(true)} />
+
+      <View style={styles.navigation}>
+        <Button
+          title="Previous"
+          onPress={() => {
+            if (index > 0) {
+              setIndex(index - 1);
+              setShowTranslation(false);
+            }
+          }}
+        />
+        <Button
+          title="Next"
+          onPress={() => {
+            if (index < flashcards.length - 1) {
+              setIndex(index + 1);
+              setShowTranslation(false);
+            }
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
+// Quiz screen
+function QuizScreen() {
+  const [index, setIndex] = useState(0);
+  const [score, setScore] = useState(0);
+
+  const currentQuestion = questions[index];
+
+  const handleAnswer = (selected) => {
+    const correct = selected === currentQuestion.answer;
+    if (correct) {
+      setScore(score + 1);
+      Alert.alert('✅ Correct!');
+    } else {
+      Alert.alert('❌ Wrong', `Correct answer: ${currentQuestion.answer}`);
+    }
+
+    if (index + 1 < questions.length) {
+      setIndex(index + 1);
+    } else {
+      Alert.alert('🎉 Quiz Finished', `Your score: ${correct ? score + 1 : score}/${questions.length}`);
+      setIndex(0);
+      setScore(0);
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.question}>{currentQuestion.question}</Text>
+      {currentQuestion.options.map((opt, i) => (
+        <TouchableOpacity key={i} style={styles.optionButton} onPress={() => handleAnswer(opt)}>
+          <Text style={styles.optionText}>{opt}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+}
+
+// App Navigator
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Flashcards" component={FlashcardScreen} />
+        <Stack.Screen name="Quiz" component={QuizScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+// Styles
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 40,
+  },
+  word: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  translation: {
+    fontSize: 24,
+    color: '#444',
+    marginBottom: 20,
+  },
+  navigation: {
+    marginTop: 30,
+    flexDirection: 'row',
+    gap: 20,
+  },
+  question: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  optionButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 8,
+    width: '100%',
+  },
+  optionText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+});
